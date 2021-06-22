@@ -68,8 +68,8 @@ vector<double> matrixVectorProduct(vector<int> &I, vector<int> &J, vector<double
 		int i1 = I[i]-1;
 		int i2 = I[i+1]-1;
 		for(int k = i1; k < i2; k++){
-			y[i] += V[k]*x[J[k]-1];
-			if(isSymmetric && J[k] != i+1){
+			y[i] += V[k]*x[J[k]-1];	
+			if(isSymmetric == true && J[k]-1 != i){
 				y[J[k]-1] += V[k]*x[i];
 			}
 		}
@@ -88,7 +88,8 @@ void CG(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, v
         p[0][i] = r[0][i];
 	}
 	double normr0 = norm<vector<double>>(r[0]);
-    for(int i = 0; i < m; i++){
+	int i = 0;
+    while(i < m){
         vector<double> Apm = matrixVectorProduct(I, J, V, p[i], isSymmetric);
         double alpha = inner_product(r[i].begin(), r[i].end(), r[i].begin(), 0.0)/inner_product(Apm.begin(), Apm.end(), p[i].begin(), 0.0);
         // x[m+1] = xm + alpha*pm
@@ -103,19 +104,22 @@ void CG(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, v
         }
 		double normri = norm<vector<double>>(r[i]);
 		double convergence = normri/normr0;
+		cout << "convergence: " << convergence << '\n';
 		if(convergence < 0.00000001) {
 			cout << "Converged!: took " << i << " iterations" << '\n';
 			printVector<vector<double>>("xm",x[i]);
 			return ;
 		}
+		i++;
     }
 	cout << "Couldn't converge with given m!" << '\n';
+	printVector<vector<double>>("xm", x[i]);
 }
 
 void computeMatrixVectorProduct(){
 
 	// Open the file:
-	ifstream fin("test1.mtx");
+	ifstream fin("s3rmt3m3.mtx");
 	int M, N, L;
 	while(fin.peek() == '%') fin.ignore(2048, '\n');
 	fin >> M >> N >> L;
@@ -131,7 +135,7 @@ void computeMatrixVectorProduct(){
 
 	fin.close();
 	sort(csrMatrix, csrMatrix+L, sortHelper);
-	bool isSymmetric = checkIsSymmetric(csrMatrix, originalMatrix, L);
+	bool isSymmetric = true;
 
 	// Initialize your matrix;
 	vector<int> I, J; // initialize row and col index array for CSR
@@ -150,12 +154,12 @@ void computeMatrixVectorProduct(){
 	} 
 	I.push_back(J.size()+1);
 
-	printVector<vector<int>>("I", I);
-	printVector<vector<int>>("J", J);
-	printVector<vector<double>>("V", V);
+	// printVector<vector<int>>("I", I);
+	// printVector<vector<int>>("J", J);
+	// printVector<vector<double>>("V", V);
 
 	// Solution X vector
-	vector<double> xstar(I.size()-1, -26);
+	vector<double> xstar(I.size()-1, 1);
 
 	// initialize y with zerosf
 	vector<double> ystar = matrixVectorProduct(I, J, V, xstar, isSymmetric);
@@ -163,10 +167,8 @@ void computeMatrixVectorProduct(){
 	// Initial Guess X
 	vector<double> x0(I.size()-1, 0);
 
-    CG(I, J, V, x0, ystar, 1000, true);
-    printVector("xstar", xstar);
-	printVector("ystar", ystar);
-	cout << '\n';
+    CG(I, J, V, x0, ystar, 5000, true);
+	// cout << '\n';
 }
 
 int main(){
