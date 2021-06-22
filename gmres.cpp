@@ -267,9 +267,17 @@ void computeMatrixVectorProduct(){
 	int countIter = 0, m = 40;
 
 	// Restarted GMRES
-    while(rho > 0.0000001){
+	vector<double> b = matrixVectorProduct(I, J, V, x, isSymmetric);
+	double normr0 = 0;
+	for(int i = 0; i < ystar.size(); i++){
+		double res = ystar[i] - b[i];
+		normr0 += res*res;
+	}
+	normr0 = sqrt(normr0);
+    while(rho/normr0 > 0.0000001){
         vector<double> xnew = GMRES(I, J, V, x, ystar, m, isSymmetric, rho);
-		// printVector("x", xnew);
+		printVector("x", xnew);
+		cout << "rho" << rho << '\n';
 		x = xnew;
 		countIter++;
     }
