@@ -125,7 +125,7 @@ void getKrylov(vector<int> &I, vector<int> &J, vector<double> &V, vector<vector<
 	v.push_back(v_next);
 }
 
-void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, vector<double> &b, int m, bool isSymmetric, double &rho){
+vector<double> GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, vector<double> &b, int m, bool isSymmetric, double &rho){
     vector<double> r0(x0.size(), 0), g(m+1, 0);
 	g[0] = 1;
 	vector<vector<double>> v, h(m, vector<double> (m+1, 0));
@@ -209,8 +209,9 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
         xm[i] = x0[i]+sum[i];
     }
 
-    printVector("xm", xm);
+    // printVector("xm", xm);
     // x0 = xm;
+	return xm;
 }
 
 void computeMatrixVectorProduct(){
@@ -263,18 +264,20 @@ void computeMatrixVectorProduct(){
 	// Initial Guess X
 	vector<double> x(I.size()-1, 0);
     double rho = 1;
-	int countIter = 0;
+	int countIter = 0, m = 40;
 
 	// Restarted GMRES
-    // while(rho > 0.0000001){
-    //     GMRES(I, J, V, x, ystar, 40, isSymmetric, rho);
-	// 	countIter++;
-    // }
+    while(rho > 0.0000001){
+        vector<double> xnew = GMRES(I, J, V, x, ystar, m, isSymmetric, rho);
+		// printVector("x", xnew);
+		x = xnew;
+		countIter++;
+    }
 
 	// Full GMRES
-	GMRES(I, J, V, x, ystar, 500, isSymmetric, rho);
+	// GMRES(I, J, V, x, ystar, 500, isSymmetric, rho);
 
-    cout << "countIter: " << countIter*40;
+    cout << "countIter: " << countIter*m;
     // printVector("xstar", xstar);
 	// printVector("ystar", ystar);
 	cout << '\n';
