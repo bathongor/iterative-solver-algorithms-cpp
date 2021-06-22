@@ -1,9 +1,7 @@
-%%MatrixMarket matrix coordinate real general
-3 3 7
-1 1 9.0e+00
-2 1 5.0e+00
-1 2 5.0e+00
-2 2 7.0e+00
-3 2 2.0e+00
-2 3 2.0e+00
-3 3 8.0e+00
+%%MatrixMarket matrix coordinate real general symmetric
+3 3 5
+1 1 2.0e+00
+2 1 -1.0e+00
+2 2 2.0e+00
+3 2 -1.0e+00
+3 3 2.0e+00

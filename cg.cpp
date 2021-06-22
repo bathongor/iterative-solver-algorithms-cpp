@@ -20,7 +20,8 @@ struct Pair {
 	}
 };
 
-double norm(vector<double> &a){
+template <class T>	
+double norm(T &a){
 	double sumSqr = 0;
 	for(int i = 0; i < a.size(); i++){
 		sumSqr += a[i]*a[i];
@@ -28,7 +29,8 @@ double norm(vector<double> &a){
 	return sqrt(sumSqr);
 }
 
-void printVector(string name, vector<double> &x){
+template <class T>	
+void printVector(string name, T &x){
 	cout << name << ": ";
 	for(int i = 0; i < x.size(); i++){	
 		cout << " " << x[i];
@@ -85,6 +87,7 @@ void CG(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, v
 		r[0][i] = b[i] - Ax0[i];
         p[0][i] = r[0][i];
 	}
+	double normr0 = norm<vector<double>>(r[0]);
     for(int i = 0; i < m; i++){
         vector<double> Apm = matrixVectorProduct(I, J, V, p[i], isSymmetric);
         double alpha = inner_product(r[i].begin(), r[i].end(), r[i].begin(), 0.0)/inner_product(Apm.begin(), Apm.end(), p[i].begin(), 0.0);
@@ -93,19 +96,26 @@ void CG(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0, v
             x[i+1][j] = x[i][j] + alpha*p[i][j];
             r[i+1][j] = r[i][j] - alpha*Apm[j];
         }
-        printVector("x[i]", x[i]);
         double beta = inner_product(r[i+1].begin(), r[i+1].begin(), r[i+1].begin(), 0.0) / inner_product(r[i].begin(), r[i].end(), r[i].begin(), 0.0);
         // p[m+1] = r[m+1] + beta*pm
         for(int j = 0; j < x[i].size(); j++){
             p[i+1][j] = r[i+1][j] + beta*p[i][j];
         }
+		double normri = norm<vector<double>>(r[i]);
+		double convergence = normri/normr0;
+		if(convergence < 0.00000001) {
+			cout << "Converged!: took " << i << " iterations" << '\n';
+			printVector<vector<double>>("xm",x[i]);
+			return ;
+		}
     }
+	cout << "Couldn't converge with given m!" << '\n';
 }
 
 void computeMatrixVectorProduct(){
 
 	// Open the file:
-	ifstream fin("test2.mtx");
+	ifstream fin("test1.mtx");
 	int M, N, L;
 	while(fin.peek() == '%') fin.ignore(2048, '\n');
 	fin >> M >> N >> L;
@@ -126,7 +136,6 @@ void computeMatrixVectorProduct(){
 	// Initialize your matrix;
 	vector<int> I, J; // initialize row and col index array for CSR
 	vector<double> V; // initialize values array that contain CSR matrix values
-
 	// Assemble CSR row, col and V based on the symmetry
 	int prevRow = -1;
 	for(int i = 0; i < L; i++){
@@ -141,6 +150,10 @@ void computeMatrixVectorProduct(){
 	} 
 	I.push_back(J.size()+1);
 
+	printVector<vector<int>>("I", I);
+	printVector<vector<int>>("J", J);
+	printVector<vector<double>>("V", V);
+
 	// Solution X vector
 	vector<double> xstar(I.size()-1, -26);
 
@@ -150,7 +163,7 @@ void computeMatrixVectorProduct(){
 	// Initial Guess X
 	vector<double> x0(I.size()-1, 0);
 
-    CG(I, J, V, x0, ystar, 100, isSymmetric);
+    CG(I, J, V, x0, ystar, 1000, true);
     printVector("xstar", xstar);
 	printVector("ystar", ystar);
 	cout << '\n';

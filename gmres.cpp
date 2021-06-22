@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
-#include <iomanip>
 using namespace std;
 
 struct Pair {
@@ -119,7 +118,7 @@ void getKrylov(vector<int> &I, vector<int> &J, vector<double> &V, vector<vector<
 	h_colj.push_back(norm(w));
 	vector<double> v_next;
 	for(int l = 0; l < w.size(); l++){
-		v_next.push_back(w[l]/h_colj[j]);
+		v_next.push_back(w[l]/h_colj[j+1]);
 	}
 	h_colj.resize(m+1, 0);
 	h[j] = h_colj;
@@ -146,7 +145,7 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
 	}
 	v.push_back(r0);
 	// g = |r0|e1
-	for(int i = 0; i < r0.size(); i++){
+	for(int i = 0; i < g.size(); i++){
 		g[i] = normr0*g[i];
 	}
 
@@ -154,7 +153,7 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
     int iter = -1;
 	for(int j = 0; j < m; j++){
 		getKrylov(I, J, V, v, j, h, m, isSymmetric);
-		for(int k = 1; k < j; k++){
+		for(int k = 1; k <= j; k++){
 			double tempPrev = c[k-1]*h[j][k-1]+s[k-1]*h[j][k];
 			h[j][k] = -s[k-1]*h[j][k-1]+c[k-1]*h[j][k];
 			h[j][k-1] = tempPrev;
@@ -162,27 +161,30 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
 		double denom = sqrt(h[j][j]*h[j][j]+h[j][j+1]*h[j][j+1]);
 		c[j] = (double)h[j][j]/denom;
 		s[j] = (double)h[j][j+1]/denom;
-        // cout << "h[j][j]: " << h[j][j] << '\n'; 
 		h[j][j] = denom;
 		g[j+1] = -s[j]*g[j];
         iter++;
         rho = abs(g[j+1]); // updated 
 		g[j] = c[j]*g[j];
-        // if(abs(g[j+1]) < 0.0000001){
-        //     break;
-        // }
 	}
 	// printMatrix("H(m)", h);
-    // Transform current H[m] to R[m] matrix    // cout <    // cout << "row: " << h.size() << " col: " << h[0].size() << '\n';
-
+    // Transform current H[m] to R[m] matrix
     for(int i = 0; i < h.size(); i++){
         for(int j = 0; j < h[i].size(); j++){
-            if(j == i+1) continue;
+            // if(j == i+1) continue;
             R[j][i] = h[i][j];
         }
     }
 
-    // Backwards substition Ry = g
+    // for(int i = 0; i < h.size(); i++){
+    //     for(int j = 0; j < h[i].size(); j++){
+    //         cout << R[i][j] << ' ';
+    //     }
+    //     cout << '\n';   
+    // }
+
+
+    // // Backwards substition Ry = g
     vector<double> y(m, 0);
     for(int i = m-1; i >= 0; i--){
         double sum = 0;
@@ -192,12 +194,12 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
         y[i] = (g[i]-sum)/R[i][i];
     }
 
-    // printVector("y", y);
+    // // printVector("y", y);
 
-    // xm = x0 + yk*vk
+    // // xm = x0 + yk*vk
     vector<double> xm(x0.size(), 0);
-    vector<double> sum(m, 0);
-    for(int k = 0; k < iter; k++){
+    vector<double> sum(x0.size(), 0);
+    for(int k = 0; k < m; k++){
         for(int i = 0; i < v[k].size(); i++){
             sum[i] += y[k]*v[k][i];
         }
@@ -208,13 +210,13 @@ void GMRES(vector<int> &I, vector<int> &J, vector<double> &V, vector<double> &x0
     }
 
     printVector("xm", xm);
-    x0 = xm;
+    // x0 = xm;
 }
 
 void computeMatrixVectorProduct(){
 
 	// Open the file:
-	ifstream fin("test2.mtx");
+	ifstream fin("orsirr_1.mtx");
 	int M, N, L;
 	while(fin.peek() == '%') fin.ignore(2048, '\n');
 	fin >> M >> N >> L;
@@ -251,7 +253,7 @@ void computeMatrixVectorProduct(){
 	I.push_back(J.size()+1);
 
 	// Solution X vector
-	vector<double> xstar(I.size()-1, 7);
+	vector<double> xstar(I.size()-1, 1);
 
 	// initialize y with zerosf
 	vector<double> ystar;
@@ -259,18 +261,18 @@ void computeMatrixVectorProduct(){
 	ystar = matrixVectorProduct(I, J, V, xstar, isSymmetric);
 
 	// Initial Guess X
-	vector<double> x(I.size()-1, -150);
+	vector<double> x(I.size()-1, 0);
     double rho = 1;
 	int countIter = 0;
 
 	// Restarted GMRES
-    while(rho > 0.0000001){
-        GMRES(I, J, V, x, ystar, 40, isSymmetric, rho);
-		countIter++;
-    }
+    // while(rho > 0.0000001){
+    //     GMRES(I, J, V, x, ystar, 40, isSymmetric, rho);
+	// 	countIter++;
+    // }
 
 	// Full GMRES
-	// GMRES(I, J, V, x, ystar, 140, isSymmetric, rho);
+	GMRES(I, J, V, x, ystar, 500, isSymmetric, rho);
 
     cout << "countIter: " << countIter*40;
     // printVector("xstar", xstar);
